@@ -1,0 +1,10 @@
+# Sample configuration for Kabanero stack hub
+name: <Stack Hub name> 
+description: <Stack Hub description>
+version: <Stack Hub version>
+stacks:
+  - name: <Stack Hub index name>
+    repos:
+      - url: <Reference to index file>
+image-org: <Organisation containing images within registry>
+image-registry: <Image registry hosting images>
