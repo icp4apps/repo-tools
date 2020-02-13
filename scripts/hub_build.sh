@@ -95,8 +95,36 @@ then
                 echo "== fetching $url"
                 (curl -s -L ${url} -o $build_dir/$fetched_index_file)
                 
-                echo "==  Adding stacks from index $url"
+                echo "== Adding stacks from index $url"
 
+                # check if we have any included stacks
+                include=""
+                included=""
+                included_stacks=$(yq r ${configfile} stacks[$stack_count].repos[$url_count].include)
+                if [ ! "${included_stacks}" == "null" ]
+                then
+                    num_included=$(yq r ${configfile} stacks[$stack_count].repos[$url_count].include | wc -l)
+                    for ((included_count=0;included_count<$num_included;included_count++));
+                    do
+                        include+="$(yq r ${configfile} stacks[$stack_count].repos[$url_count].include[$included_count]) "
+                    done
+                    included=${include[@]}
+                fi
+
+                # check if we have any excluded stacks
+                exclude=""
+                excluded=""
+                excluded_stacks=$(yq r ${configfile} stacks[$stack_count].repos[$url_count].exclude)
+                if [ ! "${excluded_stacks}" == "null" ]
+                then
+                    num_excluded=$(yq r ${configfile} stacks[$stack_count].repos[$url_count].exclude | wc -l)
+                    for ((excluded_count=0;excluded_count<$num_excluded;excluded_count++));
+                    do
+                        exclude+="$(yq r ${configfile} stacks[$stack_count].repos[$url_count].exclude[$excluded_count]) "
+                    done
+                    excluded=${exclude[@]}
+                fi
+                
                 # count the stacks within the index
                 num_index_stacks=$(yq r $build_dir/$fetched_index_file stacks[*].id | wc -l)
                      
@@ -113,65 +141,84 @@ then
                 do
                     stack_id=$(yq r ${build_dir}/${fetched_index_file} stacks[$index_stack_count].id)
                     stack_version=$(yq r ${build_dir}/${fetched_index_file} stacks[$index_stack_count].version)
-                        
-                    yq r $all_stacks stacks.[$index_stack_count] > $one_stack
                     
-                    # check if stack has already been added to consolidated index
-                    num_added_stacks=$(yq r $index_file_temp stacks[*].id | wc -l)
-                    for ((added_stack_count=0;added_stack_count<$num_added_stacks;added_stack_count++));
-                    do
-                        added_stack_id=$(yq r $index_file_temp stacks[$added_stack_count].id)
-                        added_stack_version=$(yq r $index_file_temp stacks[$added_stack_count].version)
-                        if [ "${stack_id}" == "${added_stack_id}" ]
+                    # check to see if stack is included
+                    if [ "${included}" == "" ] || [[ $included == *"${stack_id}"* ]]
+                    then
+                        add_stack_to_index=true
+                        # check to see if stack is exncluded (if we have no include)
+                        if [[ $excluded == *"${stack_id}"* ]]
                         then
-                            if [ "${stack_version}" == "${added_stack_version}" ]
-                            then
-                                stack_added="true"
-                            fi
+                            add_stack_to_index=false
+                            echo "==== Excluding stack $stack_id $stack_version "
                         fi
-                    done
-                    
-                    if [ "${stack_added}" == "true" ]
-                    then
-                        # if already added then log warning message
-                        echo "==== ERROR - stack $stack_id $stack_version already added to index"
                     else
-                        # if not already added then add to consolidated index
-                        echo "====  We are adding stack $stack_id $stack_version"
-                        yq p -i $one_stack stacks.[+]                        
-                        yq m -a -i $index_file_temp $one_stack
-                    fi
+                        echo "==== Excluding stack $stack_id $stack_version "
+                        add_stack_to_index=false
+                    fi    
                     
-                    if [ ! -z $BUILD ] && [ $BUILD == true ]
+                    if [ $add_stack_to_index == true ]
                     then
-                        for x in $(cat $one_stack | grep -E 'url:|src:' )
+                        yq r $all_stacks stacks.[$index_stack_count] > $one_stack
+                    
+                        # check if stack has already been added to consolidated index
+                        num_added_stacks=$(yq r $index_file_temp stacks[*].id | wc -l)
+                        for ((added_stack_count=0;added_stack_count<$num_added_stacks;added_stack_count++));
                         do
-                            if [ $x != 'url:' ] && [ $x != 'src:' ] && [ $x != '""' ]
+                            added_stack_id=$(yq r $index_file_temp stacks[$added_stack_count].id)
+                            added_stack_version=$(yq r $index_file_temp stacks[$added_stack_count].version)
+                            if [ "${stack_id}" == "${added_stack_id}" ]
                             then
-                                filename=$(basename $x)
-                                if [ ! -f $prefetch_dir/$filename ]
+                                if [ "${stack_version}" == "${added_stack_version}" ]
                                 then
-                                    echo "====== Downloading $prefetch_dir/$filename" 
-                                    curl -s -L $x -o $prefetch_dir/$filename
+                                    stack_added="true"
                                 fi
                             fi
                         done
+                    
+                        if [ "${stack_added}" == "true" ]
+                        then
+                            # if already added then log warning message
+                            echo "==== ERROR - stack $stack_id $stack_version already added to index"
+                        else
+                            # if not already added then add to consolidated index
+                            echo "==== Adding stack $stack_id $stack_version"
+                            yq p -i $one_stack stacks.[+]                        
+                            yq m -a -i $index_file_temp $one_stack
                         
-#                        stack_source=$(yq r $build_dir/$fetched_index_file stacks[$stack_count].src)
-#                        if [ "${stack_source}" != "null" ] && [ "${stack_source}" != "" ]
-#                        then
-#                            echo "stack source for $stack_id stack is '$stack_source'"
-#                            if [ ! -d $base_dir/$repo_name/$stack_id ]
+                        fi
+                    
+                        if [ ! -z $BUILD ] && [ $BUILD == true ]
+                        then
+                            for x in $(cat $one_stack | grep -E 'url:|src:' )
+                            do
+                                if [ $x != 'url:' ] && [ $x != 'src:' ] && [ $x != '""' ]
+                                then
+                                    filename=$(basename $x)
+                                    if [ ! -f $prefetch_dir/$filename ]
+                                    then
+                                        echo "====== Downloading $prefetch_dir/$filename" 
+                                        curl -s -L $x -o $prefetch_dir/$filename
+                                    fi
+                                fi
+                            done
+                        
+#                            stack_source=$(yq r $build_dir/$fetched_index_file stacks[$stack_count].src)
+#                            if [ "${stack_source}" != "null" ] && [ "${stack_source}" != "" ]
 #                            then
-#                                mkdir -p $base_dir/$repo_name/$stack_id
-#                                source_file=$(basename $stack_source)
-#                                (curl -s -L ${stack_source} -o $prefetch_dir/$source_file)
-#                                tar -xf $prefetch_dir/$source_file -C $base_dir/$repo_name/$stack_id > /dev/null 2>&1
+#                                echo "stack source for $stack_id stack is '$stack_source'"
+#                                if [ ! -d $base_dir/$repo_name/$stack_id ]
+#                                then
+#                                    mkdir -p $base_dir/$repo_name/$stack_id
+#                                    source_file=$(basename $stack_source)
+#                                    (curl -s -L ${stack_source} -o $prefetch_dir/$source_file)
+#                                    tar -xf $prefetch_dir/$source_file -C $base_dir/$repo_name/$stack_id > /dev/null 2>&1
+#                                fi
 #                            fi
-#                        fi
+                        fi
                     fi
                 done
-                    
+
                 if [ -f  $all_stacks ]
                 then
                     rm -f $all_stacks
@@ -191,9 +238,16 @@ then
     INDEX_LIST=$(echo "$INDEX_LIST" | xargs -n1 | sort -u | xargs)
     export INDEX_LIST=${INDEX_LIST[@]}
     
+    if [ -z $DISPLAY_NAME_PREFIX ]
+    then
+        display_name_prefix="Appsody"
+    else
+        display_name_prefix=$DISPLAY_NAME_PREFIX
+    fi
+    
     if [ "$CODEWIND_INDEX" == "true" ]
     then
-        python3 $script_dir/create_codewind_index.py $DISPLAY_NAME_PREFIX
+        python3 $script_dir/create_codewind_index.py -n $display_name_prefix -f $assets_dir
     
         if [ -d ${build_dir}/index-src ]
         then
