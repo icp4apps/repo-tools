@@ -6,5 +6,11 @@ stacks:
   - name: <Stack Hub index name>
     repos:
       - url: <Reference to index file>
+        exclude:
+          - <stack name>
+          - <stack name>
+        include:
+          - <stack name>
+          - <stack name>
 image-org: <Organisation containing images within registry>
 image-registry: <Image registry hosting images>
