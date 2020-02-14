@@ -38,10 +38,10 @@ where:
 `version:` is a version for the configuration, may align with a repository release.  
 `stacks: - name:` is the name of a repository to be built  
 `stacks:   repos:` is an array of urls to stack indexes / repositories to be included in this repository index  
-`stacks:   repos:    -url:    exclude:` is an array of stack names to exclude from the refrenced stack repository.  
-`stacks:   repos:    -url:    include:` is an array of stack names to include from the refrenced stack repository.  
-`image-org:` is the name of the organisation within the image registry which will store the docker images for included stacks.  
-`image-registry:` is the url of the image registry being used to store stack docker images.  
+`stacks:   repos:    -url:    exclude:` is an array of stack names to exclude from the refrenced stack repository. This field is optional and should be left blank if filtering is not required.  
+`stacks:   repos:    -url:    include:` is an array of stack names to include from the refrenced stack repository. This field is optional and should be left blank if filtering is not required.  
+`image-org:` is the name of the organisation within the image registry which will store the docker images for included stacks. This field is optional and controls the behaviour of the repository build, further details are avalable below.  
+`image-registry:` is the url of the image registry being used to store stack docker images. This field is optional and controls the behaviour of the repository build, further details are avalable below.  
 
 **NOTE -** `exclude`/`include` are mutually exclusive, if both fields are populated an error will be thrown.
 
