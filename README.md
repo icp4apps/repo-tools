@@ -10,7 +10,52 @@ The repo-tools repository contains three folders:
 2) scripts - This folder contains the scripts that will compose the Appsody repository
 3) example_config - This folder contains sample configuration files and previews of the resulting Appsody repository.
 
-## Composing an Appsody repository
-To compose an Appsody repository follow the steps below:
+
+## Defining your configuration
+Before building an Appsody repository you need to build a configuration file that identifies what you wish to include.
+
+The format of the configuration file is as follows:
+
+```
+# Template for repo-tools configuration
+name: <Repository name>
+description: <Repository description> 
+version: <Repository version>
+stacks:
+  - name: <Repository index name>
+    repos:
+      - url: <Reference to index file>
+      exclude:
+          - <stack name>
+        include:
+          - <stack name>
+image-org: <Organisation containing images within registry>
+image-registry: <Image registry hosting images>
+```
+where:  
+`name:` is an identifier for this particular configuration  
+`description:` is a description of the configuration  
+`version:` is a version for the configuration, may align with a repository release.  
+`stacks: - name:` is the name of a repository to be built  
+`stacks:   repos:` is an array of urls to stack indexes / repositories to be included in this repository index  
+`stacks:   repos:    -url:    exclude:` is an array of stack names to exclude from the refrenced stack repository.  
+`stacks:   repos:    -url:    include:` is an array of stack names to include from the refrenced stack repository.  
+`image-org:` is the name of the organisation within the image registry which will store the docker images for included stacks.  
+`image-registry:` is the url of the image registry being used to store stack docker images.  
+
+**NOTE -** `exclude`/`include` are mutually exclusive, if both fields are populated an error will be thrown.
+
+You can find an [example configuration](https://github.com/appsody/repo-tools/blob/master/example_config/example_repo_config.yaml) within the example_config folder.
+
+## Generating an Appsody repository
+repo-tools provides several options for generating an Appsody repository:
+
+### 1) Composition of public stacks / repositories.
+If the stacks and repositories you are including are all publically available then repo-tools can simply compose a new repository file that uses references to the existing stack asset locations. When this type of build is required simply leave the `image-org` and `image-registry` fields of your configuration empty. The composed repository files will be stored in the `assets` folder generated when the tools are run.
+
+Further options to follow......
+
+## Releasing the generated repositories.
+Once your index files are generated they simply need hosting in a location that can be accessed by your developer tools.
 
 To be continued.....
