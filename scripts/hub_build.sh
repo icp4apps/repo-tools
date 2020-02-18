@@ -1,9 +1,60 @@
 #!/bin/bash
 
+exec_hooks() {
+    local dir=$1
+    if [ -d $dir ]
+    then
+        echo " == Running $(basename $dir) scripts"
+        for x in $dir/*
+        do
+            if [ -x $x ]
+            then
+               echo " ==== Running $(basename $x)"
+               . $x
+            else
+                echo skipping $(basename $x)
+            fi
+        done
+        echo " == Done $(basename $dir) scripts"
+    fi
+}
+
+update_image() {
+    local image="$1"
+    if [ "${image}" != "null" ]
+    then
+        IFS='/' read -a image_parts <<< "$image"
+        len=${#image_parts[@]}
+        if [ $len == 2 ]
+        then
+            image_parts=("docker.io" "${image_parts[@]}")
+        fi
+        if [ "${image_registry}" != "null" ]
+        then
+            image_parts[0]="${image_registry}"
+        fi
+        if [ "${image_org}" != "null" ]
+        then
+            image_parts[1]="${image_org}"
+        fi
+    else
+        if [ "${image_registry}" != "null" ]
+        then
+            image_parts[0]="${image_registry}"
+        fi
+        if [ "${image_org}" != "null" ]
+        then
+            image_parts[1]="${image_org}"
+        fi
+        image_parts[2]=$2:$3
+    fi
+    image=$(IFS='/' ; echo "${image_parts[*]}")
+    echo "${image}"
+}
+
 script_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 base_dir=$(cd "${script_dir}/.." && pwd)
 
-# Allow multiple stacks to be selected
 if [ $# -gt 0 ]
 then
    filename=$1
@@ -25,10 +76,13 @@ else
     configfile=""   
 fi
 
-echo "Config file: $configfile"
-
 if [ ! "$configfile" == "" ] 
 then
+    echo "Config file: $configfile"
+
+    # expose an extension point for running before main 'build' processing
+    exec_hooks $script_dir/pre_build.d
+
     build_dir="${base_dir}/build"
     if [ -z $ASSETS_DIR ]
     then
@@ -40,29 +94,35 @@ then
     mkdir -p ${assets_dir}
     mkdir -p ${build_dir}
 
+    rm $build_dir/image_list > /dev/null 2>&1 
+
+
     REPO_LIST=""
     INDEX_LIST=""
         
     image_org=$(yq r ${configfile} image-org)
     image_registry=$(yq r ${configfile} image-registry)
+    nginx_image_name=$(yq r ${configfile} nginx-image-name)
     
     if [ "${image_org}" != "null" ] ||  [ "${image_registry}" != "null" ]
     then
         export BUILD_ALL=true
         export BUILD=true
-        
-        if [ "${image_org}" != "null" ]
-        then
-            export IMAGE_REGISTRY_ORG="${image_org}"
-        fi
-        if [ "${image_registry}" != "null" ]
-        then
-            export IMAGE_REGISTRY="${image_registry}"
-        fi
-        
         export prefetch_dir="${base_dir}/build/prefetch"
         mkdir -p ${prefetch_dir}
         mkdir -p ${build_dir}/index-src
+    fi
+
+    # Set the default image_org and image_registry values if they 
+    # have not been set in the config file
+    if [ "${image_org}" == "null" ]
+    then
+            image_org="appsody"
+    fi
+
+    if [ "${image_registry}" == "null" ]
+    then
+            image_registry="docker.io"
     fi
     
     # count the number of stacks in the index file
@@ -94,7 +154,7 @@ then
                 INDEX_LIST+="${url} "
                 echo "== fetching $url"
                 (curl -s -L ${url} -o $build_dir/$fetched_index_file)
-                
+
                 echo "== Adding stacks from index $url"
 
                 # check if we have any included stacks
@@ -183,16 +243,21 @@ then
                         else
                             # if not already added then add to consolidated index
                             echo "==== Adding stack $stack_id $stack_version"
-                            yq p -i $one_stack stacks.[+]                        
+                            yq p -i $one_stack stacks.[+] 
+                            if [ ! -z $BUILD ] && [ $BUILD == true ]
+                            then
+                                image=$(update_image $(yq r $one_stack stacks[0].image) $(yq r $one_stack stacks[0].id) $(yq r $one_stack stacks[0].version))
+                                yq w -i $one_stack stacks[0].image $image
+                            fi
                             yq m -a -i $index_file_temp $one_stack
                         
                         fi
                     
                         if [ ! -z $BUILD ] && [ $BUILD == true ]
                         then
-                            for x in $(cat $one_stack | grep -E 'url:|src:' )
+                            for x in $(cat $one_stack | grep -E 'src:' )
                             do
-                                if [ $x != 'url:' ] && [ $x != 'src:' ] && [ $x != '""' ]
+                                if [ $x != 'src:' ] && [ $x != '""' ]
                                 then
                                     filename=$(basename $x)
                                     if [ ! -f $prefetch_dir/$filename ]
@@ -202,22 +267,56 @@ then
                                     fi
                                 fi
                             done
-                        
-#                            stack_source=$(yq r $build_dir/$fetched_index_file stacks[$stack_count].src)
-#                            if [ "${stack_source}" != "null" ] && [ "${stack_source}" != "" ]
-#                            then
-#                                echo "stack source for $stack_id stack is '$stack_source'"
-#                                if [ ! -d $base_dir/$repo_name/$stack_id ]
-#                                then
-#                                    mkdir -p $base_dir/$repo_name/$stack_id
-#                                    source_file=$(basename $stack_source)
-#                                    (curl -s -L ${stack_source} -o $prefetch_dir/$source_file)
-#                                    tar -xf $prefetch_dir/$source_file -C $base_dir/$repo_name/$stack_id > /dev/null 2>&1
-#                                fi
-#                            fi
+
+                            for x in $(cat $one_stack | grep -E 'url:' )
+                            do
+                                if [ $x != 'url:' ]
+                                then
+                                    filename=$(basename $x)
+                                    if [ ! -f $prefetch_dir/$filename ]
+                                    then
+                                        echo "====== Downloading $prefetch_dir/$filename" 
+                                        curl -s -L $x -o $prefetch_dir/$filename
+                                    fi
+
+                                    echo "======== Re-packaging $prefetch_dir/$filename"
+                                    mkdir -p $build_dir/template
+
+                                    tar -xzf $prefetch_dir/$filename -C $build_dir/template > /dev/null 2>&1            
+                                    if [ -f $build_dir/template/.appsody-config.yaml ]
+                                    then 
+                                        image=$(update_image $(yq r $build_dir/template/.appsody-config.yaml stack))
+                                        yq w -i $build_dir/template/.appsody-config.yaml stack $image
+                                    fi
+                                    tar -czf $prefetch_dir/$filename -C $build_dir/template .
+
+                                    rm -fr $build_dir/template
+                                fi
+                            done
                         fi
                     fi
                 done
+
+                index_src=$build_dir/index-src/$(basename "$index_file_temp")
+                sed -e "s|http.*:/.*/|{{EXTERNAL_URL}}/|" $index_file_temp > $index_src
+
+                if [ "$CODEWIND_INDEX" == "true" ]
+                then
+                    upper_stack_name=$(tr '[:lower:]' '[:upper:]' <<< ${stack_name:0:1})$(tr '[:upper:]' '[:lower:]' <<< ${stack_name:1})
+                    python3 $script_dir/create_codewind_index.py -n ${upper_stack_name} -f $index_file_temp
+    
+                    if [ -d ${build_dir}/index-src ]
+                    then
+                        # iterate over each repo
+                        for codewind_file in $assets_dir/*.json
+                        do
+                            # flat json used by static appsody-index for codewind
+                            index_src=$build_dir/index-src/$(basename "$codewind_file")
+
+                            sed -e "s|http.*/.*/|{{EXTERNAL_URL}}/|" $codewind_file > $index_src
+                        done
+                    fi
+                fi
 
                 if [ -f  $all_stacks ]
                 then
@@ -234,31 +333,10 @@ then
             done
         done
     fi
-    export REPO_LIST=${REPO_LIST[@]}
-    INDEX_LIST=$(echo "$INDEX_LIST" | xargs -n1 | sort -u | xargs)
-    export INDEX_LIST=${INDEX_LIST[@]}
-    
-    if [ -z $DISPLAY_NAME_PREFIX ]
-    then
-        display_name_prefix="Appsody"
-    else
-        display_name_prefix=$DISPLAY_NAME_PREFIX
-    fi
-    
-    if [ "$CODEWIND_INDEX" == "true" ]
-    then
-        python3 $script_dir/create_codewind_index.py -n $display_name_prefix -f $assets_dir
-    
-        if [ -d ${build_dir}/index-src ]
-        then
-            # iterate over each repo
-            for codewind_file in $assets_dir/*.json
-            do
-                # flat json used by static appsody-index for codewind
-                index_src=$build_dir/index-src/$(basename "$codewind_file")
 
-                sed -e "s|${RELEASE_URL}/.*/|{{EXTERNAL_URL}}/|" $codewind_file > $index_src
-            done
-        fi
-    fi
+    # expose an extension point for running after main 'build' processing
+    exec_hooks $script_dir/post_build.d
+else
+    echo "A config file needs to be specified. Please run using: "
+    echo "./scripts/hub_build.sh <config_filename>"
 fi
