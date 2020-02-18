@@ -5,6 +5,6 @@ version: 0.1.0
 stacks:
   - name: single-ref
     repos:
-      - url: file:///Users/kilnerm/git/repo-tools/tests/repositories/nodejs-repo.yaml
+      - url: file://{{TEST_DIR}}/repositories/nodejs-repo.yaml
 image-org:
 image-registry:
