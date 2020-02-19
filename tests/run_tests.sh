@@ -5,10 +5,12 @@ base_dir=$(cd "${test_dir}/.." && pwd)
 test_config_dir=$(cd "${test_dir}/test_configurations" && pwd)
 mkdir $test_dir/result_config
 result_dir=$(cd "${test_dir}/result_config" && pwd)
+mkdir $test_dir/exec_config
+exec_config_dir=$(cd "${test_dir}/exec_config" && pwd)
 
-for config_file in $test_dir/test_configurations/*.yaml; do
-    sed -e "s#{{TEST_DIR}}#${test_dir}#g" $config_file > ./temp.yaml
-    mv ./temp.yaml $config_file
+for config_file in $test_config_dir/*.yaml; do
+    filename=$(basename $config_file)
+    sed -e "s#{{TEST_DIR}}#${test_dir}#g" $config_file > $exec_config_dir/$filename
 done
 
 declare -a succesful_tests
@@ -19,7 +21,7 @@ for test_file in $test_dir/*_test.yaml; do
     echo "Running test for configuration: $test_file"
     success="true"
     test_input=$(yq r ${test_file} input-configuration)
-    test_input_file=$test_config_dir/$test_input
+    test_input_file=$exec_config_dir/$test_input
     echo "test input file: $test_input_file"
     $base_dir/scripts/hub_build.sh "$test_input_file"
 
@@ -86,6 +88,7 @@ for test_file in $test_dir/*_test.yaml; do
         mv $result_file $result_dir/$result_file_name
     fi
 done
+rm -rf $exec_config_dir
 
 passed_count=${#succesful_tests[@]}
 echo "RESULT: $passed_count / $test_count tests passed."
