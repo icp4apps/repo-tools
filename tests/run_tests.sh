@@ -2,7 +2,9 @@
 
 test_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 base_dir=$(cd "${test_dir}/.." && pwd)
-test_config_dir=$(cd "${test_dir}/test_configurations" &&pwd)
+test_config_dir=$(cd "${test_dir}/test_configurations" && pwd)
+mkdir $test_dir/result_config
+result_dir=$(cd "${test_dir}/result_config" && pwd)
 
 for config_file in $test_dir/test_configurations/*.yaml; do
     sed -e "s#{{TEST_DIR}}#${test_dir}#g" $config_file > ./temp.yaml
@@ -81,6 +83,7 @@ for test_file in $test_dir/*_test.yaml; do
             echo "Test passed: $test_input"
             succesful_tests+=($test_input)
         fi
+        mv $result_file $result_dir/$result_file_name
     fi
 done
 

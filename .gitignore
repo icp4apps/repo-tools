@@ -2,3 +2,4 @@
 /build
 /.pydevproject
 /.project
+/tests/result_config
