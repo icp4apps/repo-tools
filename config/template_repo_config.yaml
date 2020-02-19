@@ -12,5 +12,6 @@ stacks:
         include:
           - <stack name>
           - <stack name>
-image-org: <Organisation containing images within registry>
-image-registry: <Image registry hosting images>
+image-org: <Organisation containing images within registry, default="appsody">
+image-registry: <Image registry hosting images, default="docker.io">
+nginx-image-name: <Image name for the generated nginx image, default="repo-index"> 
