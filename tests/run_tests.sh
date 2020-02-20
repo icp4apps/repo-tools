@@ -20,7 +20,7 @@ declare -a failed_tests
 test_count=0
 for test_file in $test_dir/*_test.yaml; do
     test_filename=$(basename $test_file)
-    test_filename="${filename%.*}"
+    test_filename="${test_filename%.*}"
     test_count=$((test_count+1))
     echo "Running test for configuration: $test_file"
     success="true"
@@ -113,7 +113,7 @@ for test_file in $test_dir/*_test.yaml; do
                     fi
                     if [[ "$expected_image_org" != null ]]; then
                         if [[ "$expected_image_org" -ne "$result_org" ]]; then
-                            echo "Image organisation mismatch, expeted: $expected_image_org, actual: $result_org"
+                            echo "Image organisation mismatch, expected: $expected_image_org, actual: $result_org"
                             success="false"
                             break
                         fi
