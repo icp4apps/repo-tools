@@ -8,3 +8,4 @@ stacks:
       - url: file://{{TEST_DIR}}/repositories/nodejs-repo.yaml
 image-org:
 image-registry:
+nginx-image-name:

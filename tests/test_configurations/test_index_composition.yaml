@@ -21,3 +21,4 @@ stacks:
       - url: https://github.com/appsody/stacks/releases/download/java-openliberty-v0.1.4/incubator-index.yaml
 image-org: kabanero
 image-registry: docker.io
+nginx-image-name:
