@@ -106,11 +106,14 @@ then
     
     if [ "${image_org}" != "null" ] ||  [ "${image_registry}" != "null" ]
     then
+        echo "Retrieving and modifying all the assets"
         export BUILD_ALL=true
         export BUILD=true
         export prefetch_dir="${base_dir}/build/prefetch"
         mkdir -p ${prefetch_dir}
         mkdir -p ${build_dir}/index-src
+    else
+        echo "Not retrieving or modifying any assets"
     fi
 
     # Set the default image_org and image_registry values if they 
@@ -297,8 +300,11 @@ then
                     fi
                 done
 
-                index_src=$build_dir/index-src/$(basename "$index_file_temp")
-                sed -e "s|http.*:/.*/|{{EXTERNAL_URL}}/|" $index_file_temp > $index_src
+                if [ ! -z $BUILD ] && [ $BUILD == true ]
+                then
+                    index_src=$build_dir/index-src/$(basename "$index_file_temp")
+                    sed -e "s|http.*:/.*/|{{EXTERNAL_URL}}/|" $index_file_temp > $index_src
+                fi
 
                 if [ "$CODEWIND_INDEX" == "true" ]
                 then
