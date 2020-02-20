@@ -62,8 +62,8 @@ for test_file in $test_dir/*_test.yaml; do
             for ((stack_count=0;stack_count<$results_stack_count;stack_count++));
             do
                 result_stacks[$stack_count]=$(yq r ${result_file} stacks[$stack_count].id)
-                image_paths[$stacks_count]=$(yq r ${result_file} stacks[$stack_count].image)
-                src_paths[$stacks_count]=$(yq r ${result_file} stacks[$stack_count].src)
+                image_paths[$stack_count]=$(yq r ${result_file} stacks[$stack_count].image)
+                src_paths[$stack_count]=$(yq r ${result_file} stacks[$stack_count].src)
             done
             
             # Compare results
@@ -137,5 +137,5 @@ rm -rf $exec_config_dir
 passed_count=${#succesful_tests[@]}
 echo "RESULT: $passed_count / $test_count tests passed."
 if [[ $passed_count -ne $test_count ]]; then
-    echo "Failed tests: ${failed_tetss[*]}"
+    echo "Failed tests: ${failed_tests[*]}"
 fi
