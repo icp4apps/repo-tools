@@ -10,6 +10,8 @@ result_dir=$(cd "${test_dir}/result_config" && pwd)
 mkdir $test_dir/exec_config
 exec_config_dir=$(cd "${test_dir}/exec_config" && pwd)
 
+expected_src_prefix="{{EXTERNAL_URL}}"
+
 for config_file in $test_config_dir/*.yaml; do
     filename=$(basename $config_file)
     sed -e "s#{{TEST_DIR}}#${test_dir}#g" $config_file > $exec_config_dir/$filename
@@ -49,7 +51,11 @@ for test_file in $test_dir/*_test.yaml; do
             done
 
             # Get actual results
-            result_file=$base_dir/assets/$result_file_name
+            if [[ "$expected_image_registry" != null || "$expected_image_org" != null  ]]; then
+                result_file=$base_dir/build/index-src/$result_file_name
+            else
+                result_file=$base_dir/assets/$result_file_name
+            fi
             if [[ ! -f "$result_file" ]]; then
                 echo "Result file not found: $result_file"
                 success="false"
@@ -121,6 +127,25 @@ for test_file in $test_dir/*_test.yaml; do
                 done
             fi
             # Check src url correctly updated
+            if [[ "$expected_image_registry" != null || "$expected_image_org" != null  ]]; then
+            for ((result_count=0;result_count<$results_stack_count;result_count++));
+                do
+                    result_src=${src_paths[$result_count]}
+                    IFS='/' read -a src_parts <<< "$result_src"
+                    len=${#src_parts[@]}
+                    if [ $len -ne 2 ]; then
+                        echo "Unexpected src path length: $result_src"
+                        success="false"
+                        break
+                    fi
+                    result_src_prefix=${src_parts[0]}
+                    if [[ "$expected_src_prefix" != $result_src_prefix ]]; then
+                        echo "Prefix for src mismatch, expected: $expected_src_prefix, actual: $result_src_prefix"
+                        success="false"
+                        break
+                    fi
+                done
+            fi
         done
         if [[ "$success" != "true" ]]; then
             echo "Test failed: $test_input"
