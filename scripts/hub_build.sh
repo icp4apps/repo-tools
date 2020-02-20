@@ -161,31 +161,27 @@ then
                 echo "== Adding stacks from index $url"
 
                 # check if we have any included stacks
-                include=""
-                included=""
+                declare -a included
                 included_stacks=$(yq r ${configfile} stacks[$stack_count].repos[$url_count].include)
                 if [ ! "${included_stacks}" == "null" ]
                 then
                     num_included=$(yq r ${configfile} stacks[$stack_count].repos[$url_count].include | wc -l)
                     for ((included_count=0;included_count<$num_included;included_count++));
                     do
-                        include+="$(yq r ${configfile} stacks[$stack_count].repos[$url_count].include[$included_count]) "
+                        included=("${included[@]}" "$(yq r ${configfile} stacks[$stack_count].repos[$url_count].include[$included_count]) ")
                     done
-                    included=${include[@]}
                 fi
 
                 # check if we have any excluded stacks
-                exclude=""
-                excluded=""
+                declare -a excluded
                 excluded_stacks=$(yq r ${configfile} stacks[$stack_count].repos[$url_count].exclude)
                 if [ ! "${excluded_stacks}" == "null" ]
                 then
                     num_excluded=$(yq r ${configfile} stacks[$stack_count].repos[$url_count].exclude | wc -l)
                     for ((excluded_count=0;excluded_count<$num_excluded;excluded_count++));
                     do
-                        exclude+="$(yq r ${configfile} stacks[$stack_count].repos[$url_count].exclude[$excluded_count]) "
+                        excluded=("${excluded[@]}" "$(yq r ${configfile} stacks[$stack_count].repos[$url_count].exclude[$excluded_count]) ")
                     done
-                    excluded=${exclude[@]}
                 fi
                 
                 # count the stacks within the index
@@ -206,11 +202,11 @@ then
                     stack_version=$(yq r ${build_dir}/${fetched_index_file} stacks[$index_stack_count].version)
                     
                     # check to see if stack is included
-                    if [ "${included}" == "" ] || [[ $included == *"${stack_id}"* ]]
+                    if [ "${included}" == "" ] || [[ " ${included[@]} " =~ " ${stack_id} " ]]
                     then
                         add_stack_to_index=true
                         # check to see if stack is exncluded (if we have no include)
-                        if [[ $excluded == *"${stack_id}"* ]]
+                        if [[ " ${excluded[@]} " =~ " ${stack_id} " ]]
                         then
                             add_stack_to_index=false
                             echo "==== Excluding stack $stack_id $stack_version "
