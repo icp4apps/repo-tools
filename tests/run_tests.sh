@@ -10,7 +10,7 @@ result_dir=$(cd "${test_dir}/result_config" && pwd)
 mkdir $test_dir/exec_config
 exec_config_dir=$(cd "${test_dir}/exec_config" && pwd)
 
-expected_src_prefix="{{EXTERNAL_URL}}"
+expected_src_prefix="REPO_TEST_URL"
 
 for config_file in $test_config_dir/*.yaml; do
     filename=$(basename $config_file)
@@ -53,6 +53,8 @@ for test_file in $test_dir/*_test.yaml; do
             # Get actual results
             if [[ "$expected_image_registry" != null || "$expected_image_org" != null  ]]; then
                 result_file=$base_dir/build/index-src/$result_file_name
+                sed -e "s#{{EXTERNAL_URL}}#$expected_src_prefix#g" $result_file > $base_dir/build/index-src/temp-$result_file_name
+                result_file=$base_dir/build/index-src/temp-$result_file_name
             else
                 result_file=$base_dir/assets/$result_file_name
             fi
