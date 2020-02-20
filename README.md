@@ -63,5 +63,5 @@ If your stacks / repositories are hosted in a private environment that your depl
 To run the tools follow these staight forward steps:
 
 1) Create your configuration file and place it in the config folder.
-2) From the base folder of the repository run the build tool using the command `./scripts/hub_build.sh`.
-3) Once the script you can host the generated assets in a location your tooling / developers can access or, if using private repositories, push the nginx image to your image registry and deploy it.
+2) From the base folder of the repository run the build tool using the command `./scripts/hub_build.sh <config file>`. You do not need to specify the path to the file.
+3) Once the script has completed you can host the generated assets in a location your tooling / developers can access or, if using private repositories, push the nginx image to your image registry and deploy it.
