@@ -133,7 +133,8 @@ then
                 do
                     stack_name=$(jq .[$index_stack_count].name $index_file | tr -d '"')
                     relative_path=$(jq .[$index_stack_count].links.self $index_file | tr -d '"')
-                    devfile_path=$repository_url/$relative_path
+                    # Relative path always leads with a /
+                    devfile_path=$repository_url$relative_path
 
                     echo "processing stack: $stack_name"
                     
