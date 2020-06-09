@@ -156,8 +156,6 @@ then
                     then
                         crd_file="$build_dir/$group_name/$stack_name-CRD.yaml"
                         # Write stack CRD
-                        echo "template: $crd_template"
-                        echo "file: $crd_file"
                         cp -f $crd_template $crd_file
                         $(yq w -i $crd_file metadata.name $stack_name)
                         $(yq w -i $crd_file spec.name $stack_name)
