@@ -3,11 +3,10 @@ name: Test-exclude-stacks
 description: Test stacks are excluded correctly
 input-configuration: exclude_stacks.yaml
 expected-results:
-  - output-file: exclude-stacks-index.yaml
-    number-of-stacks: 2
-    included-stacks:
-      - id: nodejs
-      - id: nodejs-express
-    image-registry:
-    image-org:
-    host-path:
+  output-groups:
+    - name: exclude-stacks
+      output-file-count: 3
+      included-stacks:
+        - id: quarkus
+        - id: openLiberty
+        - id: springBoot

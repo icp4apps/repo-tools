@@ -31,123 +31,55 @@ for test_file in $test_dir/*_test.yaml; do
     echo "test input file: $test_input_file"
     $base_dir/scripts/hub_build.sh "$test_input_file" > "$result_dir/$test_filename-output.txt"
 
-    num_expected_results=$(yq r ${test_file} expected-results[*].output-file | wc -l)
+    # Each expected result is a stack group
+    num_expected_results=$(yq r ${test_file} expected-results.output-groups[*].name | wc -l)
     if [ $num_expected_results -gt 0 ] 
     then
         echo "Found $num_expected_results results"
-        for ((result_count=0;result_count<$num_expected_results;result_count++)); 
+        for ((group_count=0;group_count<$num_expected_results;group_count++)); 
         do
             # Get expected results
-            result_file_name=$(yq r ${test_file} expected-results[$result_count].output-file)
-            expected_stack_count=$(yq r ${test_file} expected-results[$result_count].number-of-stacks)
-            expected_image_org=$(yq r ${test_file} expected-results[$result_count].image-org)
-            expected_image_registry=$(yq r ${test_file} expected-results[$result_count].image-registry)
-            expected_host_path=$(yq r ${test_file} expected-results[$result_count].host-path)
-            declare -a included_stacks
-            expected_stack_included_count=$(yq r ${test_file} expected-results[$result_count].included-stacks[*].id | wc -l)
-            for ((stack_count=0;stack_count<$expected_stack_included_count;stack_count++));
+            expected_group_name=$(yq r ${test_file} expected-results.output-groups[$group_count].name)
+            expected_file_count=$(yq r ${test_file} expected-results.output-groups[$group_count].output-file-count)
+            expected_stack_count=$(yq r ${test_file} expected-results.output-groups[$group_count].included-stacks | wc -l)
+
+            declare -a expected_stacks
+            for ((stack_count=0;stack_count<$expected_stack_count;stack_count++));
             do
-                included_stacks[$stack_count]=$(yq r ${test_file} expected-results[$result_count].included-stacks[$stack_count].id)
+                expected_stacks[$stack_count]=$(yq r ${test_file} expected-results.output-groups[$group_count].included-stacks[$stack_count].id)
             done
 
-            # Get actual results
-            if [[ "$expected_image_registry" != null || "$expected_image_org" != null  ]]; then
-                result_file=$base_dir/build/index-src/$result_file_name
-                sed -e "s#{{EXTERNAL_URL}}#$expected_src_prefix#g" $result_file > $base_dir/build/index-src/temp-$result_file_name
-                result_file=$base_dir/build/index-src/temp-$result_file_name
-            else
-                result_file=$base_dir/assets/$result_file_name
-            fi
-            if [[ ! -f "$result_file" ]]; then
-                echo "Result file not found: $result_file"
+            # Check output
+            results_dir=$base_dir/build
+
+            # Result group exists
+            expected_folder="$results_dir/$expected_group_name"
+            if [[ ! -d "$expected_folder" ]]; then
+                echo "Result group not found: $expected_group_name, folder: $expected_folder"
                 success="false"
                 break
             fi
-            results_stack_count=$(yq r ${result_file} stacks[*].id | wc -l)
-            declare -a result_stacks
-            declare -a image_paths
-            declare -a src_paths
-            for ((stack_count=0;stack_count<$results_stack_count;stack_count++));
-            do
-                result_stacks[$stack_count]=$(yq r ${result_file} stacks[$stack_count].id)
-                image_paths[$stack_count]=$(yq r ${result_file} stacks[$stack_count].image)
-                src_paths[$stack_count]=$(yq r ${result_file} stacks[$stack_count].src)
-            done
-            
-            # Compare results
-            # Check we have the right number of stacks
-            if [[ $results_stack_count -ne $expected_stack_count ]]; then
-                echo "  Error - Unexpected number of stacks in result"
+
+            # Expected number of CRD files generated
+            CRD_count=$(ls -f $results_dir/$expected_group_name/*.yaml | wc -l)
+            if [ $CRD_count -ne $expected_stack_count ]; then
+                echo "Number of CRD files unexpected. Found: $CRD_count, Expected: $expected_stack_count"
                 success="false"
+                break
             fi
-            # Check all expected stacks are present
-            for ((index=0;index<$expected_stack_count;index++));
+
+            # CRDs for expected stacks present
+            for (( expected_count=0;expected_count<$expected_stack_count;expected_count++));
             do
-                expected_stack=${included_stacks[$index]}
-                stack_found="false"
-                for ((result_count=0;result_count<$results_stack_count;result_count++));
-                do
-                    result_stack=${result_stacks[$result_count]}
-                    if [[ "$expected_stack" == "$result_stack" ]]; then
-                        stack_found="true"
-                        break
-                    fi
-                done
-                if [[ "$stack_found" == "false" ]]; then
-                    echo "  Error - Missing stack in results, stack found: $stack_found"
+                expected_name=${expected_stacks[$expected_count]}
+                expected_file="$results_dir/$expected_group_name/$expected_name-CRD.yaml"
+                if [ ! -f $expected_file ]; then
+                    echo "CRD file not found. Expected: $expected_file"
                     success="false"
+                    break
                 fi
             done
-            # Check the image reistry and org are correct if overriden
-            if [[ "$expected_image_registry" != null || "$expected_image_org" != null  ]]; then
-            for ((result_count=0;result_count<$results_stack_count;result_count++));
-                do
-                    result_image=${image_paths[$result_count]}
-                    IFS='/' read -a image_parts <<< "$result_image"
-                    len=${#image_parts[@]}
-                    if [ $len -ne 3 ]; then
-                        echo "Unexpected image tag length: $result_image"
-                        success="false"
-                        break
-                    fi
-                    result_reg=${image_parts[0]}
-                    result_org=${image_parts[1]}
-                    if [[ "$expected_image_registry" != null ]]; then
-                        if [[ "$expected_image_registry" != "$result_reg" ]]; then
-                            echo "Image registry mismatch, expected: $expected_image_registry, actual: $result_reg"
-                            success="false"
-                            break
-                        fi
-                    fi
-                    if [[ "$expected_image_org" != null ]]; then
-                        if [[ "$expected_image_org" -ne "$result_org" ]]; then
-                            echo "Image organisation mismatch, expected: $expected_image_org, actual: $result_org"
-                            success="false"
-                            break
-                        fi
-                    fi
-                done
-            fi
-            # Check src url correctly updated
-            if [[ "$expected_image_registry" != null || "$expected_image_org" != null  ]]; then
-            for ((result_count=0;result_count<$results_stack_count;result_count++));
-                do
-                    result_src=${src_paths[$result_count]}
-                    IFS='/' read -a src_parts <<< "$result_src"
-                    len=${#src_parts[@]}
-                    if [ $len -ne 2 ]; then
-                        echo "Unexpected src path length: $result_src"
-                        success="false"
-                        break
-                    fi
-                    result_src_prefix=${src_parts[0]}
-                    if [[ "$expected_src_prefix" != $result_src_prefix ]]; then
-                        echo "Prefix for src mismatch, expected: $expected_src_prefix, actual: $result_src_prefix"
-                        success="false"
-                        break
-                    fi
-                done
-            fi
+            unset expected_stacks
         done
         if [[ "$success" != "true" ]]; then
             echo "Test failed: $test_input"
@@ -156,7 +88,6 @@ for test_file in $test_dir/*_test.yaml; do
             echo "Test passed: $test_input"
             succesful_tests+=($test_input)
         fi
-        mv $result_file $result_dir/$result_file_name
     fi
 done
 rm -rf $exec_config_dir
