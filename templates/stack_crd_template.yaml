@@ -1,12 +1,5 @@
 apiVersion: kabanero.io/v1alpha2
 kind: Stack
 metadata:
-  name: <stack name>
   namespace: kabanero
 spec:
-  name: <stack name>
-  version: <version>
-  devfile: <location> 
-  images:
-    - image: <image>
-      digest: <digest>

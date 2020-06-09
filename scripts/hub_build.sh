@@ -19,42 +19,9 @@ exec_hooks() {
     fi
 }
 
-update_image() {
-    local image="$1"
-    if [ "${image}" != "null" ]
-    then
-        IFS='/' read -a image_parts <<< "$image"
-        len=${#image_parts[@]}
-        if [ $len == 2 ]
-        then
-            image_parts=("docker.io" "${image_parts[@]}")
-        fi
-        if [ "${image_registry}" != "null" ]
-        then
-            image_parts[0]="${image_registry}"
-        fi
-        if [ "${image_org}" != "null" ]
-        then
-            image_parts[1]="${image_org}"
-        fi
-    else
-        if [ "${image_registry}" != "null" ]
-        then
-            image_parts[0]="${image_registry}"
-        fi
-        if [ "${image_org}" != "null" ]
-        then
-            image_parts[1]="${image_org}"
-        fi
-        image_parts[2]=$2:$3
-    fi
-    image=$(IFS='/' ; echo "${image_parts[*]}")
-    echo "${image}"
-}
-
 script_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 base_dir=$(cd "${script_dir}/.." && pwd)
-crd_template=$basedir/templates/stack_crd_template.yaml
+crd_template=$base_dir/templates/stack_crd_template.yaml
 
 if [ $# -gt 0 ]
 then
@@ -112,6 +79,9 @@ then
             
             num_urls=$(yq r ${configfile} stack_groups[$group_count].repos[*].url | wc -l)
             
+            declare -a included
+            declare -a excluded
+            
             for ((url_count=0;url_count<$num_urls;url_count++)); 
             do
                 url=$(yq r ${configfile} stack_groups[$group_count].repos[$url_count].url)
@@ -122,14 +92,14 @@ then
                 (curl -s -L ${url} -o $build_dir/$group_name/$fetched_index_file)
 
                 echo "== Adding stacks from index $url"
-                declare -a included
-                declare -a excluded
+                unset included
+                unset excluded
                 
                 # check if we have any included stacks
                 included_stacks=$(yq r ${configfile} stack_groups[$group_count].repos[$url_count].include)
                 if [ ! "${included_stacks}" == "null" ]
                 then
-                    num_included=$(yq r ${configfile} stack_groups[$group_count]].repos[$url_count].include | wc -l)
+                    num_included=$(yq r ${configfile} stack_groups[$group_count].repos[$url_count].include | wc -l)
                     for ((included_count=0;included_count<$num_included;included_count++));
                     do
                         included=("${included[@]}" "$(yq r ${configfile} stack_groups[$group_count].repos[$url_count].include[$included_count]) ")
@@ -151,21 +121,27 @@ then
                 else
                     unset excluded
                 fi
+
+                echo "included: ${included[@]}"
+                echo "excluded: ${excluded[@]}"
                 
                 # count the stacks within the index
-                num_index_stacks=$(jq length $build_dir/$group_name/$fetched_index_file)
+                index_file=$build_dir/$group_name/$fetched_index_file
+                num_index_stacks=$(jq length $index_file)
                   	   
                 for ((index_stack_count=0;index_stack_count<$num_index_stacks;index_stack_count++));
                 do
-                    stack_name=$(jq .[$index_stack_count].name)
-                    relative_path=$(jq .[$index_stack_count].links.self)
+                    stack_name=$(jq .[$index_stack_count].name $index_file | tr -d '"')
+                    relative_path=$(jq .[$index_stack_count].links.self $index_file | tr -d '"')
                     devfile_path=$repository_url/$relative_path
+
+                    echo "processing stack: $stack_name"
                     
                     # check to see if stack is included
                     if [ "${included}" == "" ] || [[ " ${included[@]} " =~ " ${stack_name} " ]]
                     then
                         generate_stack_CRD=true
-                        # check to see if stack is excluded (if we have not included)
+                        # check to see if stack is excluded (if we have not include)
                         if [[ " ${excluded[@]} " =~ " ${stack_name} " ]]
                         then
                             generate_stack_CRD=false
@@ -180,9 +156,11 @@ then
                     then
                         crd_file="$build_dir/$group_name/$stack_name-CRD.yaml"
                         # Write stack CRD
-                        cp $crd_template $crd_file
-                        $(yq w -i $crd_file metadata.name $stackname)
-                        $(yq w -i $crd_file spec.name $stackname)
+                        echo "template: $crd_template"
+                        echo "file: $crd_file"
+                        cp -f $crd_template $crd_file
+                        $(yq w -i $crd_file metadata.name $stack_name)
+                        $(yq w -i $crd_file spec.name $stack_name)
                         $(yq w -i $crd_file spec.devfile $devfile_path)
                     fi
                 done

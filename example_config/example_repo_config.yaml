@@ -5,9 +5,9 @@ version: 0.0.1
 stack_groups:
   - name: default
     repos:
-      - url: https://github.com/odo-devfiles/registry/blob/master/devfiles/index.json
-        exclude: 
+      - url: https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/index.json
+        include: 
           - nodejs
           - openLiberty
           - quarkus
-          - springboot
+          - springBoot
