@@ -1,7 +1,7 @@
 #!/bin/bash
 
 test_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-base_dir=$(cd "${test_dir}/.." && pwd)
+base_dir=$(cd "${test_dir}/../.." && pwd)
 test_config_dir=$(cd "${test_dir}/test_configurations" && pwd)
 if [[ ! -d "$test_dir/result_config" ]]; then
     mkdir $test_dir/result_config
