@@ -50,7 +50,7 @@ for test_file in $test_dir/*_test.yaml; do
             done
 
             # Check output
-            results_dir=$base_dir/build/defile_stacks
+            results_dir=$base_dir/build/devfile_stacks
 
             # Result group exists
             expected_folder="$results_dir/$expected_group_name"
