@@ -51,12 +51,14 @@ for test_file in $test_dir/*_test.yaml; do
             done
 
             # Get actual results
+            assets_folder=$base_dir/assets/appsody_stacks
+            build_folder=$base_dir/build/appsody_stacks
             if [[ "$expected_image_registry" != null || "$expected_image_org" != null  ]]; then
-                result_file=$base_dir/build/index-src/$result_file_name
-                sed -e "s#{{EXTERNAL_URL}}#$expected_src_prefix#g" $result_file > $base_dir/build/index-src/temp-$result_file_name
-                result_file=$base_dir/build/index-src/temp-$result_file_name
+                result_file=$build_folder/index-src/$result_file_name
+                sed -e "s#{{EXTERNAL_URL}}#$expected_src_prefix#g" $result_file > $build_folder/index-src/temp-$result_file_name
+                result_file=$build_folder/index-src/temp-$result_file_name
             else
-                result_file=$base_dir/assets/$result_file_name
+                result_file=$assets_folder/$result_file_name
             fi
             if [[ ! -f "$result_file" ]]; then
                 echo "Result file not found: $result_file"

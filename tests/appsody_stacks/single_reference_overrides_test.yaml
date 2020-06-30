@@ -3,7 +3,7 @@ name: Test-single-index-with-overrides
 description: Test a single index file is reconstructed correctly when image overrides are specified.
 input-configuration: single_reference_overrides.yaml
 expected-results:
-  - output-file: single-ref-override-index.yaml
+  - output-file: single-ref-overrides-index.yaml
     number-of-stacks: 4
     included-stacks:
       - id: nodejs

@@ -29,7 +29,7 @@ for test_file in $test_dir/*_test.yaml; do
     test_input=$(yq r ${test_file} input-configuration)
     test_input_file=$exec_config_dir/$test_input
     echo "test input file: $test_input_file"
-    $base_dir/scripts/hub_build.sh "$test_input_file" > "$result_dir/$test_filename-output.txt"
+    $base_dir/scripts/crd_build.sh "$test_input_file" > "$result_dir/$test_filename-output.txt"
 
     # Each expected result is a stack group
     num_expected_results=$(yq r ${test_file} expected-results.output-groups[*].name | wc -l)
@@ -50,7 +50,7 @@ for test_file in $test_dir/*_test.yaml; do
             done
 
             # Check output
-            results_dir=$base_dir/build
+            results_dir=$base_dir/build/defile_stacks
 
             # Result group exists
             expected_folder="$results_dir/$expected_group_name"
