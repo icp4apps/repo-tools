@@ -3,3 +3,4 @@
 /.pydevproject
 /.project
 /tests/appsody_stacks/result_config
+/tests/devfile_stacks/result_config
