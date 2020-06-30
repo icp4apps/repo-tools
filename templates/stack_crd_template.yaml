@@ -1,0 +1,6 @@
+apiVersion: kabanero.io/v1alpha2
+kind: Stack
+metadata:
+  namespace: kabanero
+  state: active
+spec:
