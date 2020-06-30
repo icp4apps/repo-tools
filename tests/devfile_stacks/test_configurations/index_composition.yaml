@@ -1,0 +1,9 @@
+# Sample configuration for Kabanero stack hub
+name: Index composition test
+description: Configuration to test composition of multiple indexes
+version: 0.1.0
+stack_groups:
+  - name: index-composition
+    repos:
+      - url: file://{{TEST_DIR}}/repositories/nodejs-repo.json
+      - url: file://{{TEST_DIR}}/repositories/java-repo.json

@@ -1,0 +1,11 @@
+# Test stack inclusion.
+name: Test-include-stacks
+description: Test stacks are included correctly
+input-configuration: include_stacks.yaml
+expected-results:
+  output-groups:
+    - name: include-stacks
+      output-file-count: 2
+      included-stacks:
+        - id: quarkus
+        - id: openLiberty

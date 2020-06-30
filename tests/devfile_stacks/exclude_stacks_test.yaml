@@ -1,0 +1,12 @@
+# Test stack exclusion.
+name: Test-exclude-stacks
+description: Test stacks are excluded correctly
+input-configuration: exclude_stacks.yaml
+expected-results:
+  output-groups:
+    - name: exclude-stacks
+      output-file-count: 3
+      included-stacks:
+        - id: quarkus
+        - id: openLiberty
+        - id: springBoot
