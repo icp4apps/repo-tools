@@ -5,7 +5,7 @@ dist: bionic
 
 before_install:
     - ./scripts/install_yq.sh
-    - ./script/install_jq.sh
+    - ./scripts/install_jq.sh
 
 script:
   - . ./tests/appsody_stacks/run_appsody_tests.sh
