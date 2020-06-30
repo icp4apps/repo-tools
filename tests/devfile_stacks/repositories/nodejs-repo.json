@@ -1,0 +1,17 @@
+[
+  {
+    "name": "nodejs",
+    "displayName": "NodeJS Express Web Application",
+    "description": "Stack with NodeJS 10",
+    "tags": [
+      "NodeJS",
+      "Express",
+      "ubi8"
+    ],
+    "projectType": "nodejs",
+    "language": "nodejs",
+    "links": {
+      "self": "/devfiles/nodejs/devfile.yaml"
+    }
+  }
+]

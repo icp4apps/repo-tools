@@ -1,0 +1,14 @@
+# Test composition from multiple references.
+name: Test-index-composition
+description: Test multiple index files are merged correctly
+input-configuration: index_composition.yaml
+expected-results:
+  output-groups:
+    - name: index-composition
+      output-file-count: 5
+      included-stacks:
+        - id: quarkus
+        - id: openLiberty
+        - id: springBoot
+        - id: quarkus
+        - id: nodejs

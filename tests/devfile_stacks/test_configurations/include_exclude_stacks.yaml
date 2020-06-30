@@ -1,0 +1,14 @@
+# Sample configuration for Kabanero stack hub
+name: Stack include & exclude test
+description: Configuration to test stack inclusion and exclusion
+version: 0.1.0
+stack_groups:
+  - name: include-exclude-stacks
+    repos:
+      - url: file://{{TEST_DIR}}/repositories/java-repo.json
+        exclude: 
+          - maven
+          - quarkus
+      - url: file://{{TEST_DIR}}/repositories/nodejs-repo.json
+        include:
+          - nodejs

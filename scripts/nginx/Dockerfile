@@ -5,8 +5,8 @@ COPY scripts/nginx/nginx.conf  /etc/nginx/nginx.conf
 COPY scripts/nginx/nginx-ssl.conf  /etc/nginx/nginx-ssl.conf
 COPY scripts/nginx/startup.sh  /opt/startup.sh
 COPY build/prefetch    /opt/www/public
-COPY assets            /opt/www/public
-COPY build/index-src   /opt/www/public
+COPY assets/appsody_stacks  /opt/www/public
+COPY build/appsody_stacks/index-src /opt/www/public
 
 EXPOSE 8080
 EXPOSE 8443

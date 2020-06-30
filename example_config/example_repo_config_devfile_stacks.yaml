@@ -1,0 +1,13 @@
+# Sample configuration for CP4A application stack CRD creation
+name: CP4A stack CRDs
+description: A sample configuration file to generate stack CRDs for the default application stacks.
+version: 0.0.1
+stack_groups:
+  - name: default
+    repos:
+      - url: https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/index.json
+        include: 
+          - nodejs
+          - openLiberty
+          - quarkus
+          - springBoot

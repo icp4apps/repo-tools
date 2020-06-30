@@ -81,12 +81,12 @@ then
     echo "Config file: $configfile"
 
     # expose an extension point for running before main 'build' processing
-    exec_hooks $script_dir/pre_build.d
+    exec_hooks $script_dir/pre_build.d/appsody_stacks
 
-    build_dir="${base_dir}/build"
+    build_dir="${base_dir}/build/appsody_stacks"
     if [ -z $ASSETS_DIR ]
     then
-        assets_dir="${base_dir}/assets"
+        assets_dir="${base_dir}/assets/appsody_stacks"
     else
         assets_dir=$ASSETS_DIR
     fi
@@ -347,7 +347,7 @@ then
     fi
 
     # expose an extension point for running after main 'build' processing
-    exec_hooks $script_dir/post_build.d
+    exec_hooks $script_dir/post_build.d/appsody_stacks
 else
     echo "A config file needs to be specified. Please run using: "
     echo "./scripts/hub_build.sh <config_filename>"

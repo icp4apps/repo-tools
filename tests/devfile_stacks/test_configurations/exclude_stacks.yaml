@@ -1,0 +1,10 @@
+# Sample configuration for Kabanero stack hub
+name: Stack exlcude test
+description: Configuration to test stack exclusion
+version: 0.1.0
+stack_groups:
+  - name: exclude-stacks
+    repos:
+      - url: file://{{TEST_DIR}}/repositories/java-repo.json
+        exclude: 
+          - maven

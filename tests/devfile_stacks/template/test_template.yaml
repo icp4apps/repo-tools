@@ -1,0 +1,8 @@
+# Template configuration for a repo-tools test
+name: <Name of test>
+description: <Description of test>
+input-configuration: <Path to input repo-tools configuration>
+expected-results:
+  output-file-count: <expected number of output files>
+  included-stacks:
+    - id: - <name of included stack>

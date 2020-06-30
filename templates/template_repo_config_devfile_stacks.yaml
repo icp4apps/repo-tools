@@ -1,0 +1,14 @@
+# Configuration for CP4A application stack CRD creation
+name: <Configuration name> 
+description: <Configuration description>
+version: <Configuration version>
+stack_groups:
+  - name: <CRD collection name>
+    repos:
+      - url: <Reference to devfile repository index file>
+        exclude:
+          - <stack name>
+          - <stack name>
+        include:
+          - <stack name>
+          - <stack name>
