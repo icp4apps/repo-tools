@@ -55,6 +55,11 @@ for test_file in $test_dir/*_test.yaml; do
             build_folder=$base_dir/build/appsody_stacks
             if [[ "$expected_image_registry" != null || "$expected_image_org" != null  ]]; then
                 result_file=$build_folder/index-src/$result_file_name
+                if [[ ! -f "$result_file" ]]; then
+                    echo "No result file to insert overrides: $result_file"
+                    success="false"
+                    break
+                fi
                 sed -e "s#{{EXTERNAL_URL}}#$expected_src_prefix#g" $result_file > $build_folder/index-src/temp-$result_file_name
                 result_file=$build_folder/index-src/temp-$result_file_name
             else
@@ -158,7 +163,9 @@ for test_file in $test_dir/*_test.yaml; do
             echo "Test passed: $test_input"
             succesful_tests+=($test_input)
         fi
-        mv $result_file $result_dir/$result_file_name
+        if [[ -f "$result_file" ]]; then
+            mv $result_file $result_dir/$result_file_name
+        fi
     fi
 done
 rm -rf $exec_config_dir
