@@ -96,7 +96,6 @@ then
 
     rm $build_dir/image_list > /dev/null 2>&1 
 
-
     REPO_LIST=""
     INDEX_LIST=""
         
@@ -135,10 +134,6 @@ then
         for ((stack_count=0;stack_count<$num_stacks;stack_count++)); 
         do
             stack_name=$(yq r ${configfile} stacks[$stack_count].name)
-            if [ ! -z $BUILD ] && [ $BUILD == true ]
-            then
-                mkdir -p $base_dir/$stack_name
-            fi
             
             REPO_LIST+="${stack_name} "
             
