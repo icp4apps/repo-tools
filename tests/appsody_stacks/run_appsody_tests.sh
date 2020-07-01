@@ -174,4 +174,6 @@ passed_count=${#succesful_tests[@]}
 echo "RESULT: $passed_count / $test_count tests passed."
 if [[ $passed_count -ne $test_count ]]; then
     echo "Failed tests: ${failed_tests[*]}"
+    exit 99
 fi
+exit 0
