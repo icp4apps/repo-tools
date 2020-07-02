@@ -176,4 +176,3 @@ if [[ $passed_count -ne $test_count ]]; then
     echo "Failed tests: ${failed_tests[*]}"
     exit 99
 fi
-exit 0
