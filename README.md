@@ -1,5 +1,5 @@
 # repo-tools
-This repository contains the tools and configuration templates required to compose an Appsody Repository. 
+This repository contains the tools and configuration templates required to compose an Appsody Repository.
 
 ## Appsody Repository
 An Appsody repository is a collection of meta-data for a group of stacks. An example is the default [Appsody index](https://github.com/appsody/stacks/releases/latest/download/incubator-index.yaml).
