@@ -74,7 +74,6 @@ then
         do
             group_name=$(yq r ${configfile} stack_groups[$group_count].name)
             mkdir -p $build_dir/$group_name
-            mkdir -p $assets_dir/$group_name
             
             echo "Creating stack CRDs for $group_name"
             
@@ -156,7 +155,7 @@ then
                     
                     if [ $generate_stack_CRD == true ]
                     then
-                        crd_file="$assets_dir/$group_name/$stack_name-CRD.yaml"
+                        crd_file="$build_dir/$group_name/$stack_name-CRD.yaml"
                         # Write stack CRD
                         cp -f $crd_template $crd_file
                         $(yq w -i $crd_file metadata.name $stack_name)
@@ -165,6 +164,8 @@ then
                     fi
                 done
             done
+            # Create zip for group CRDs
+            zip -qjr "$assets_dir/$group_name-CRDs.zip" "$build_dir/$group_name" -i "*-CRD.yaml"
         done
     fi
 

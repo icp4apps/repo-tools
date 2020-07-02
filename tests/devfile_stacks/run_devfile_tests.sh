@@ -53,15 +53,19 @@ for test_file in $test_dir/*_test.yaml; do
             results_dir=$base_dir/assets/devfile_stacks
 
             # Result group exists
-            expected_folder="$results_dir/$expected_group_name"
-            if [[ ! -d "$expected_folder" ]]; then
-                echo "Result group not found: $expected_group_name, folder: $expected_folder"
+            expected_zip="$results_dir/$expected_group_name-CRDs.zip"
+            extract_folder="$results_dir/$expected_group_name-CRDs"
+            if [[ ! -f "$expected_zip" ]]; then
+                echo "Archive for result group not found: $expected_group_name, archive: $expected_zip"
                 success="false"
                 break
             fi
 
+            # Extract archive
+            unzip -q $expected_zip -d $extract_folder
+
             # Expected number of CRD files generated
-            CRD_count=$(ls -f $results_dir/$expected_group_name/*.yaml | wc -l)
+            CRD_count=$(ls -f $extract_folder/*.yaml | wc -l)
             if [ $CRD_count -ne $expected_stack_count ]; then
                 echo "Number of CRD files unexpected. Found: $CRD_count, Expected: $expected_stack_count"
                 success="false"
@@ -72,7 +76,7 @@ for test_file in $test_dir/*_test.yaml; do
             for (( expected_count=0;expected_count<$expected_stack_count;expected_count++));
             do
                 expected_name=${expected_stacks[$expected_count]}
-                expected_file="$results_dir/$expected_group_name/$expected_name-CRD.yaml"
+                expected_file="$extract_folder/$expected_name-CRD.yaml"
                 if [ ! -f $expected_file ]; then
                     echo "CRD file not found. Expected: $expected_file"
                     success="false"
