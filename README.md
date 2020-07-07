@@ -87,6 +87,8 @@ where:
 
 **NOTE -** `exclude`/`include` are mutually exclusive, if both fields are populated an error will be thrown.
 
+You can find an [example configuration](https://github.com/appsody/repo-tools/blob/master/example_config/example_repo_config_defile_stacks.yaml) within the example_config folder.
+
 ## Building the Stack Hub
 The stack hub can be built manually or via a CI pipeline such as Travis.
 
